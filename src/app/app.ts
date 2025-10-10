@@ -1,13 +1,13 @@
 import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { Header } from './layout/header/header';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, Header],
   template: `
-    <h1 class="bg-red-500">Welcome to {{ title() }}!</h1>
-
-    <router-outlet />
+    <app-header/>
+    <router-outlet/>
   `,
   styles: [],
 })
