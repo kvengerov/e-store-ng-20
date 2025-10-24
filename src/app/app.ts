@@ -1,6 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { Header } from './layout/header/header';
+import { WishlistStore } from './stores/wishlist-store';
 
 @Component({
   selector: 'app-root',
@@ -13,6 +14,12 @@ import { Header } from './layout/header/header';
   `,
   styles: [],
 })
-export class App {
+export class App implements OnInit {
   protected readonly title = signal('e-store-ng-20');
+
+  private wishlistStore = inject(WishlistStore);
+
+  ngOnInit() {
+    this.wishlistStore.loadFromStorage();
+  }
 }

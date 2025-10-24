@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
+import { MatBadge } from '@angular/material/badge';
 import { RouterLink } from '@angular/router';
+import { WishlistStore } from '../../stores/wishlist-store';
 
 @Component({
   selector: 'app-header-actions',
@@ -9,13 +11,29 @@ import { RouterLink } from '@angular/router';
     MatButton,
     MatIconButton,
     MatIcon,
+    MatBadge,
     RouterLink,
   ],
   template: `
     <div class="flex items-center gap-2">
-      <button matIconButton routerLink="/wishlist">
-        <mat-icon>favorite</mat-icon>
-      </button>
+      @if (wishlistCount() > 0) {
+        <button
+          matIconButton
+          routerLink="/wishlist"
+          [matBadge]="wishlistCount()"
+          matBadgeColor="warn"
+          matBadgeSize="small"
+        >
+          <mat-icon>favorite</mat-icon>
+        </button>
+      } @else {
+        <button
+          matIconButton
+          routerLink="/wishlist"
+        >
+          <mat-icon>favorite</mat-icon>
+        </button>
+      }
       <button matIconButton>
         <mat-icon>shopping_cart</mat-icon>
       </button>
@@ -30,5 +48,7 @@ import { RouterLink } from '@angular/router';
   styles: ``
 })
 export class HeaderActions {
+  private wishlistStore = inject(WishlistStore);
 
+  wishlistCount = this.wishlistStore.count;
 }
