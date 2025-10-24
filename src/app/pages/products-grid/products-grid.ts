@@ -1,4 +1,4 @@
-import { Component, computed, inject, input, OnInit } from '@angular/core';
+import { Component, computed, inject, input, OnInit, effect } from '@angular/core';
 import { Product } from '../../models/product';
 import { ProductCard } from '../../components/product-card/product-card';
 import { CartService } from '../../services/cart-service';
@@ -6,8 +6,8 @@ import { MatSidenav, MatSidenavContainer, MatSidenavContent } from '@angular/mat
 import { MatListItem, MatNavList } from '@angular/material/list';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { TitleCasePipe } from '@angular/common';
-import { ProductService } from '../../services/product-service';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { EcommerceStore } from '../../stores/ecommerce-store';
+import { UIStore } from '../../stores/ui-store';
 
 @Component({
   selector: 'app-products-grid',
@@ -51,19 +51,19 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
           {{ category() | titlecase }}
         </h1>
 
-        @if (productService.loading()) {
+        @if (store.loading()) {
           <p>Loading…</p>
         }
-        @if (productService.error()) {
-          <p class="error">{{ productService.error() }}</p>
+        @if (store.error()) {
+          <p class="error">{{ store.error() }}</p>
         }
 
-        @if (!productService.loading() && !productService.error()) {
+        @if (!store.loading() && !store.error()) {
           <p class="text-base text-gray-600 mb-6">
-            {{ filteredProducts().length }} products found
+            {{ store.filteredProducts().length }} products found
           </p>
           <div class="responsive-grid">
-            @for (product of filteredProducts(); track trackById(product)) {
+            @for (product of store.filteredProducts(); track trackById(product)) {
               <app-product-card [product]="product" (addToCartClicked)="addToCart($event)"/>
             }
           </div>
@@ -74,39 +74,43 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
   styles: ``
 })
 export default class ProductsGrid implements OnInit {
-  productService = inject(ProductService);
   cartService = inject(CartService);
-  bp = inject(BreakpointObserver);
+  store = inject(EcommerceStore);
+  uiStore = inject(UIStore);
 
   category = input<string>('all');
-  categories = this.productService.categories;
-  filteredProducts = this.productService.filteredBy(this.category);
+  categories = this.store.categories;
 
   activeSlug = computed(() => (this.category() || 'all').toLowerCase());
   categoriesVM = computed(() =>
     this.categories().map(label => ({
       label,
       slug: label.toLowerCase(),
-      count: this.productService.countByCategory(label)
+      count: this.getCountByCategory(label)
     }))
   );
-  sidenavMode = computed(() =>
-    this.bp.isMatched(Breakpoints.Medium) || this.bp.isMatched(Breakpoints.Large) || this.bp.isMatched(Breakpoints.XLarge)
-      ? 'side'
-      : 'over'
-  );
-  sidenavOpened = computed(() => this.sidenavMode() === 'side');
+  sidenavMode = this.uiStore.sidenavMode;
+  sidenavOpened = this.uiStore.sidenavOpened;
 
-
+  constructor() {
+    effect(() => {
+      this.store.setCategory(this.category());
+    });
+  }
 
   ngOnInit() {
-    this.productService.load();
-    console.log(this.filteredProducts());
+    this.store.loadProducts();
   }
 
   addToCart(product: Product): void {
     this.cartService.add(product);
     console.log(this.cartService.items());
+  }
+
+  getCountByCategory(label: string): number {
+    const slug = (label ?? '').toLowerCase();
+    if (!slug || slug === 'all') return this.store.products().length;
+    return this.store.products().filter(p => p.category.toLowerCase() === slug).length;
   }
 
   trackById = (p: Product) => p.id;
